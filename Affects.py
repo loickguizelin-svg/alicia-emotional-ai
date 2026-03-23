@@ -4,23 +4,28 @@ import os
 import random
 
 class AliciaAffects:
-    def __init__(self, dna_sequence):
+    def __init__(self, dna_sequence, initial_state=None):
         self.dna = dna_sequence
         # Le décodage de l'ADN en traits de caractère (coefficients fixes)
         self.traits = self._decode_dna(dna_sequence)
         
-        # État dynamique (les variables qui vont bouger)
-        self.state = {
-            "tension": 0.2,      # Calme au démarrage
-            "energie": 1.0,      # Batterie pleine
-            "curiosite": self.traits['base_curiosity'],
-            "attachement": 0.0,   # Tout à construire
-            "entropie": 0.0,
-            "stabilite": 1.0
-        }
+        # État dynamique
+        if initial_state:
+            # Si on a un état chargé (JSON), on l'utilise
+            self.state = initial_state
+        else:
+            # Sinon, valeurs par défaut
+            self.state = {
+                "tension": 0.2,
+                "energie": 1.0,
+                "curiosite": self.traits['base_curiosity'],
+                "attachement": 0.0,
+                "entropie": 0.0,
+                "stabilite": 1.0
+            }
 
     def _decode_dna(self, dna):
-        # On utilise le hash de l'ADN pour extraire des valeurs entre 0 et 1
+        # Ici dna est bien un string, donc .encode() fonctionnera !
         h = hashlib.sha256(dna.encode()).hexdigest()
         return {
             "base_curiosity": int(h[0:2], 16) / 255.0,

@@ -27,11 +27,21 @@ def sauvegarder_etat():
         json.dump(alicia_affects.state, f, ensure_ascii=False, indent=4)
 
 # Initialisation
+# 1. On charge le DNA (le texte brut)
+# --- INITIALISATION ---
+# 1. On charge l'état et l'ADN
 constantes_vitales = charger_etat()
-alicia_affects = AliciaAffects(constantes_vitales)
+with open("dna_alicia.txt", "r", encoding="utf-8") as f:
+    dna_brut = f.read()
+
+# 2. On crée les briques une par une
+alicia_affects = AliciaAffects(dna_brut, constantes_vitales)
 alicia_inconscient = AliciaInconscient(alicia_affects)
-alicia_com = AliciaCom()
-alicia_petite_voix = AliciaPetiteVoix(alicia_affects, alicia_inconscient)
+alicia_com = AliciaCom() # On crée l'objet de communication ici
+
+# 3. ON PASSE ALICIA_COM À LA PETITE VOIX
+# L'erreur venait du fait qu'il manquait 'alicia_com' en 3ème argument
+alicia_petite_voix = AliciaPetiteVoix(alicia_affects, alicia_inconscient, alicia_com)
 
 @app.get("/")
 async def home(request: Request):
