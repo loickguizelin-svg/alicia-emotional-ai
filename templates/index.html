@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Alicia Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
+        body { background: #0f172a; color: white; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto grid grid-cols-3 gap-6">
+        <div class="col-span-1 glass p-6 rounded-2xl border border-slate-700">
+            <h2 class="text-xl font-bold mb-4 text-cyan-400">Constantes Vitales</h2>
+            <div id="affects-container"></div>
+        </div>
+
+        <div class="col-span-2 flex flex-col h-[80vh]">
+            <div id="chat-box" class="flex-1 overflow-y-auto glass p-6 rounded-2xl border border-slate-700 mb-4 space-y-4">
+                <div class="text-slate-400 italic">Alicia s'éveille... ADN: {{ dna }}</div>
+            </div>
+
+            <form id="chat-form" class="flex gap-2">
+                <input type="text" id="user-input" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-500" placeholder="Lui dire quelque chose...">
+                <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 px-6 py-2 rounded-lg transition">Envoyer</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatBox = document.getElementById('chat-box');
+        const affectsContainer = document.getElementById('affects-container');
+
+        async function updateAffects() {
+            const res = await fetch('/affects');
+            const data = await res.json();
+            affectsContainer.innerHTML = Object.entries(data).map(([key, val]) => `
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs mb-1 uppercase tracking-widest">${key}</div>
+                    <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                        <div class="bg-cyan-400 h-full transition-all duration-500" style="width: ${val * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function checkNotifications() {
+            const res = await fetch('/notifications');
+            const data = await res.json();
+            data.thoughts.forEach(thought => {
+                chatBox.innerHTML += `
+                    <div class="text-left opacity-60 italic">
+                        <span class="bg-slate-800 text-cyan-200 px-3 py-1 rounded-lg text-xs">
+                            Murmure : ${thought}
+                        </span>
+                    </div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+
+        chatForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('user-input');
+            if(!input.value) return;
+
+            const formData = new FormData();
+            formData.append('message', input.value);
+
+            chatBox.innerHTML += `<div class="text-right"><span class="bg-slate-700 px-3 py-2 rounded-lg inline-block text-sm">Lo: ${input.value}</span></div>`;
+            input.value = '';
+
+            const res = await fetch('/chat', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            chatBox.innerHTML += `<div class="text-left"><span class="bg-cyan-900/50 border border-cyan-700 px-3 py-2 rounded-lg inline-block text-sm">Alicia: ${data.alicia}</span></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            updateAffects();
+        };
+
+        updateAffects();
+        setInterval(() => {
+            updateAffects();
+            checkNotifications();
+        }, 5000);
+    </script>
+    <button onclick="partirAuDodo()" class="mt-4 w-full py-2 bg-indigo-900 border border-indigo-500 rounded-lg text-xs hover:bg-indigo-700 transition-all">
+        Simuler un cycle de sommeil
+    </button>
+    
+    <script>
+    async function partirAuDodo() {
+        const res = await fetch('/sleep', { method: 'POST' });
+        const data = await res.json();
+        alert(data.status);
+        updateAffects();
+    }
+    </script>
+</body>
+</html>
